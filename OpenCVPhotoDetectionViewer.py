@@ -51,7 +51,7 @@ def main():
         ap = argparse.ArgumentParser()
         ap.add_argument("-l", "--localimage", type=str, default="", help="Local path to input image")
         ap.add_argument("-u", "--url", type=str, default="", help="URL to image")
-        ap.add_argument("-uly", "--models", default="./models", help="Base path to models directory")
+        ap.add_argument("-m", "--models", default="./models", help="Base path to models directory")
         ap.add_argument("-c", "--confidence", type=float, default=0.10,
                         help="minimum probability to filter weak detections")
         ap.add_argument("-n", "--nmsthreshold", type=float, default=0.30, help="NMS threshold")
@@ -76,16 +76,11 @@ def main():
         objectList = list()  # List to hold the actual object categories
         imageMat = None
 
-        # Load the COCO class labels our YOLO model was trained on
+        # Load the class labels our YOLO models were trained on
         cocoLabelsPath = os.path.sep.join([args["models"], "coco.names"])
         openImagesLabelsPath = os.path.sep.join([args["models"], "openimages.names.lowercase"])
         COCOLABELS = open(cocoLabelsPath).read().strip().split("\n")
         OPENIMAGESLABELS = open(openImagesLabelsPath).read().strip().split("\n")
-
-        # Initialize a list of colors to represent each possible class label.  Note that we have a total of 607
-        # unique objects by combining both COCO and OpenImages
-        np.random.seed(8675309)
-        COLORS = np.random.randint(0, 255, size=(607, 3), dtype="uint8")
 
         # Read in our weights and cfg files
         cocoWeightsPath = os.path.sep.join([args["models"], "coco.weights"])
@@ -190,6 +185,9 @@ def main():
         # Apply non-maxima suppression to our indices to remove overlapping/duplicate results.
         idxs = cv2.dnn.NMSBoxes(boxes, confidences, CONFIDENCE, THRESHOLD)
 
+        # Bounding Box Color
+        bbox_color = [0, 0, 255]
+
         # Ensure at least one detection exists
         if len(idxs) > 0:
             # Loop over the indexes we are keeping
@@ -199,10 +197,9 @@ def main():
                 (w, h) = (boxes[i][2], boxes[i][3])
 
                 # Draw a bounding box rectangle and label on the image
-                color = [int(c) for c in COLORS[classIDs[i]]]
-                cv2.rectangle(imageMat, (ulx, uly), (ulx + w, uly + h), color, 2)
+                cv2.rectangle(imageMat, (ulx, uly), (ulx + w, uly + h), bbox_color, 2)
                 text = "{}".format(objectList[i])
-                cv2.putText(imageMat, text, (ulx, uly - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                cv2.putText(imageMat, text, (ulx + 5, uly + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, bbox_color, 1)
 
         # Show the output image
         cv2.imshow("Image", imageMat)
